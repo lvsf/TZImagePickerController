@@ -14,6 +14,8 @@
 #import "TZImageManager.h"
 #import "TZImageCropManager.h"
 
+#import "SKImageCropViewController.h"
+
 @interface TZPhotoPreviewController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIScrollViewDelegate> {
     UICollectionView *_collectionView;
     UICollectionViewFlowLayout *_layout;
@@ -31,6 +33,7 @@
     UILabel *_numberLabel;
     UIButton *_originalPhotoButton;
     UILabel *_originalPhotoLabel;
+    UIButton *_cropButton;
     
     CGFloat _offsetItemCount;
     
@@ -142,27 +145,40 @@
         _originalPhotoButton.imageEdgeInsets = UIEdgeInsetsMake(0, [TZCommonTools tz_isRightToLeftLayout] ? 10 : -10, 0, 0);
         _originalPhotoButton.backgroundColor = [UIColor clearColor];
         [_originalPhotoButton addTarget:self action:@selector(originalPhotoButtonClick) forControlEvents:UIControlEventTouchUpInside];
-        _originalPhotoButton.titleLabel.font = [UIFont systemFontOfSize:13];
+        _originalPhotoButton.titleLabel.font = [UIFont systemFontOfSize:15];
         [_originalPhotoButton setTitle:_tzImagePickerVc.fullImageBtnTitleStr forState:UIControlStateNormal];
         [_originalPhotoButton setTitle:_tzImagePickerVc.fullImageBtnTitleStr forState:UIControlStateSelected];
         [_originalPhotoButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateNormal];
         [_originalPhotoButton setTitleColor:[UIColor whiteColor] forState:UIControlStateSelected];
         [_originalPhotoButton setImage:_tzImagePickerVc.photoPreviewOriginDefImage forState:UIControlStateNormal];
         [_originalPhotoButton setImage:_tzImagePickerVc.photoOriginSelImage forState:UIControlStateSelected];
+        [_originalPhotoButton setContentVerticalAlignment:UIControlContentVerticalAlignmentCenter];
         
         _originalPhotoLabel = [[UILabel alloc] init];
-        _originalPhotoLabel.textAlignment = NSTextAlignmentLeft;
-        _originalPhotoLabel.font = [UIFont systemFontOfSize:13];
-        _originalPhotoLabel.textColor = [UIColor whiteColor];
+        _originalPhotoLabel.textAlignment = NSTextAlignmentCenter;
+        _originalPhotoLabel.font = [UIFont systemFontOfSize:11];
+        _originalPhotoLabel.textColor = [UIColor lightGrayColor];
         _originalPhotoLabel.backgroundColor = [UIColor clearColor];
         if (_isSelectOriginalPhoto) [self showPhotoBytes];
     }
     
+    _cropButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    _cropButton.titleLabel.font = [UIFont systemFontOfSize:15];
+    [_cropButton setTitle:@"编辑" forState:UIControlStateNormal];
+    [_cropButton setTitleColor:_tzImagePickerVc.oKButtonTitleColorNormal forState:UIControlStateNormal];
+    [_cropButton addTarget:self action:@selector(cropButtonClick) forControlEvents:UIControlEventTouchUpInside];
+    [_cropButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentLeft];
+
     _doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _doneButton.titleLabel.font = [UIFont systemFontOfSize:16];
+    _doneButton.titleLabel.font = [UIFont systemFontOfSize:15];
     [_doneButton addTarget:self action:@selector(doneButtonClick) forControlEvents:UIControlEventTouchUpInside];
     [_doneButton setTitle:_tzImagePickerVc.doneBtnTitleStr forState:UIControlStateNormal];
-    [_doneButton setTitleColor:_tzImagePickerVc.oKButtonTitleColorNormal forState:UIControlStateNormal];
+    [_doneButton setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    [_doneButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentRight];
+    [_doneButton setBackgroundColor:_tzImagePickerVc.oKButtonTitleColorNormal];
+    [_doneButton setContentEdgeInsets:UIEdgeInsetsMake(0, 10, 0, 10)];
+    [_doneButton.layer setCornerRadius:3];
+    [_doneButton.layer setMasksToBounds:YES];
     
     _numberImageView = [[UIImageView alloc] initWithImage:_tzImagePickerVc.photoNumberIconImage];
     _numberImageView.backgroundColor = [UIColor clearColor];
@@ -184,10 +200,11 @@
     [_numberLabel addGestureRecognizer:tapGesture];
     
     [_originalPhotoButton addSubview:_originalPhotoLabel];
+    [_toolBar addSubview:_cropButton];
     [_toolBar addSubview:_doneButton];
     [_toolBar addSubview:_originalPhotoButton];
-    [_toolBar addSubview:_numberImageView];
-    [_toolBar addSubview:_numberLabel];
+//    [_toolBar addSubview:_numberImageView];
+//    [_toolBar addSubview:_numberLabel];
     [self.view addSubview:_toolBar];
     
     if (_tzImagePickerVc.photoPreviewPageUIConfigBlock) {
@@ -283,16 +300,21 @@
         [_collectionView reloadData];
     }
     
+    [_cropButton sizeToFit];
+    _cropButton.frame = CGRectMake(12, 0, 44, 44);
+    
     CGFloat toolBarHeight = 44 + [TZCommonTools tz_safeAreaInsets].bottom;
     CGFloat toolBarTop = self.view.tz_height - toolBarHeight;
     _toolBar.frame = CGRectMake(0, toolBarTop, self.view.tz_width, toolBarHeight);
     if (_tzImagePickerVc.allowPickingOriginalPhoto) {
         CGFloat fullImageWidth = [_tzImagePickerVc.fullImageBtnTitleStr boundingRectWithSize:CGSizeMake(CGFLOAT_MAX, CGFLOAT_MAX) options:NSStringDrawingUsesFontLeading attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:13]} context:nil].size.width;
-        _originalPhotoButton.frame = CGRectMake(0, 0, fullImageWidth + 56, 44);
-        _originalPhotoLabel.frame = CGRectMake(fullImageWidth + 42, 0, 80, 44);
+        CGFloat originalPhotoButtonWidth = fullImageWidth + 56;
+        CGFloat originalPhotoLabelHeight = _originalPhotoLabel.font.pointSize;
+        _originalPhotoButton.frame = CGRectMake((self.view.tz_width - originalPhotoButtonWidth) * 0.5, 0, originalPhotoButtonWidth, 44);
+        _originalPhotoLabel.frame = CGRectMake(0, 44 - originalPhotoLabelHeight, originalPhotoButtonWidth, originalPhotoLabelHeight);
     }
     [_doneButton sizeToFit];
-    _doneButton.frame = CGRectMake(self.view.tz_width - _doneButton.tz_width - 12, 0, MAX(44, _doneButton.tz_width), 44);
+    _doneButton.frame = CGRectMake(self.view.tz_width - _doneButton.tz_width - 12, (44 - 28) * 0.5, _doneButton.tz_width, 28);
     _numberImageView.frame = CGRectMake(_doneButton.tz_left - 24 - 5, 10, 24, 24);
     _numberLabel.frame = _numberImageView.frame;
     
@@ -396,6 +418,11 @@
     if (self.backButtonClickBlock) {
         self.backButtonClickBlock(_isSelectOriginalPhoto);
     }
+}
+
+- (void)cropButtonClick {
+    SKImageCropViewController *cropViewController = SKImageCropViewController.new;
+    [self.navigationController presentViewController:cropViewController animated:NO completion:nil];
 }
 
 - (void)doneButtonClick {
@@ -578,9 +605,19 @@
     } else {
         _indexLabel.hidden = YES;
     }
-    _numberLabel.text = [NSString stringWithFormat:@"%zd",_tzImagePickerVc.selectedModels.count];
-    _numberImageView.hidden = (_tzImagePickerVc.selectedModels.count <= 0 || _isHideNaviBar || _isCropImage);
-    _numberLabel.hidden = (_tzImagePickerVc.selectedModels.count <= 0 || _isHideNaviBar || _isCropImage);
+    
+//    _numberLabel.text = [NSString stringWithFormat:@"%zd",_tzImagePickerVc.selectedModels.count];
+//    _numberImageView.hidden = (_tzImagePickerVc.selectedModels.count <= 0 || _isHideNaviBar || _isCropImage);
+//    _numberLabel.hidden = (_tzImagePickerVc.selectedModels.count <= 0 || _isHideNaviBar || _isCropImage);
+    
+    if (_tzImagePickerVc.selectedModels.count > 0 && _tzImagePickerVc.maxImagesCount > 1) {
+        [_doneButton setTitle:[NSString stringWithFormat:@"%@(%@)",_tzImagePickerVc.doneBtnTitleStr,@(_tzImagePickerVc.selectedModels.count)] forState:UIControlStateNormal];
+    }
+    else {
+        [_doneButton setTitle:_tzImagePickerVc.doneBtnTitleStr forState:UIControlStateNormal];
+    }
+    [_doneButton sizeToFit];
+    [_doneButton setFrame:CGRectMake(self.view.tz_width - _doneButton.tz_width - 12, (44 - 28) * 0.5, _doneButton.tz_width, 28)];
     
     _originalPhotoButton.selected = _isSelectOriginalPhoto;
     _originalPhotoLabel.hidden = !_originalPhotoButton.isSelected;

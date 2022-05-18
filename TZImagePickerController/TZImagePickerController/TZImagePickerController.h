@@ -86,10 +86,6 @@
 /// 默认为NO，如果设置为YES, 用户能编辑视频
 @property (nonatomic, assign) BOOL allowEditVideo;
 
-/// Default is NO, if set YES, user can edit photo.
-/// 默认为NO，如果设置为YES, 用户能编辑图片
-@property (nonatomic, assign) BOOL allowEditPhoto;
-
 /// Export quality of cropped video, Default is AVAssetExportPresetMediumQuality
 /// 裁剪视频的导出质量，默认是 AVAssetExportPresetMediumQuality
 @property (nonatomic, assign) NSString *presetName;
