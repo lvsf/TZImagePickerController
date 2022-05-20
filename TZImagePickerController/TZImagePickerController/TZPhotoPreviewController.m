@@ -166,6 +166,7 @@
     _cropButton.titleLabel.font = [UIFont systemFontOfSize:15];
     [_cropButton setTitle:@"编辑" forState:UIControlStateNormal];
     [_cropButton setTitleColor:_tzImagePickerVc.oKButtonTitleColorNormal forState:UIControlStateNormal];
+    [_cropButton setTitleColor:UIColor.lightGrayColor forState:UIControlStateDisabled];
     [_cropButton addTarget:self action:@selector(cropButtonClick) forControlEvents:UIControlEventTouchUpInside];
     [_cropButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentLeft];
 
@@ -421,8 +422,24 @@
 }
 
 - (void)cropButtonClick {
+    TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
+    // 如果图片正在从iCloud同步中,提醒用户
+    if (_progress > 0 && _progress < 1 && (_selectButton.isSelected || !_tzImagePickerVc.selectedModels.count )) {
+        _alertView = [_tzImagePickerVc showAlertWithTitle:[NSBundle tz_localizedStringForKey:@"Synchronizing photos from iCloud"]];
+        return;
+    }
+    _isHideNaviBar = YES;
+    _naviBar.hidden = self.isHideNaviBar;
+    NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.currentIndex inSection:0];
+    TZPhotoPreviewCell *cell = (TZPhotoPreviewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
     SKImageCropViewController *cropViewController = SKImageCropViewController.new;
-    [self.navigationController presentViewController:cropViewController animated:NO completion:nil];
+    [cropViewController setImage:cell.previewView.imageView.image];
+    [cropViewController setBottomBarHeight:CGRectGetHeight(_toolBar.bounds)];
+    [self addChildViewController:cropViewController];
+    [self.view addSubview:cropViewController.view];
+    [self.view insertSubview:cropViewController.view belowSubview:_naviBar];
+    [cropViewController.view setFrame:self.view.bounds];
+    [cropViewController didMoveToParentViewController:self];
 }
 
 - (void)doneButtonClick {
@@ -609,6 +626,8 @@
 //    _numberLabel.text = [NSString stringWithFormat:@"%zd",_tzImagePickerVc.selectedModels.count];
 //    _numberImageView.hidden = (_tzImagePickerVc.selectedModels.count <= 0 || _isHideNaviBar || _isCropImage);
 //    _numberLabel.hidden = (_tzImagePickerVc.selectedModels.count <= 0 || _isHideNaviBar || _isCropImage);
+    
+    _cropButton.enabled = (model.type != TZAssetModelMediaTypeVideo && model.type != TZAssetModelMediaTypeAudio);
     
     if (_tzImagePickerVc.selectedModels.count > 0 && _tzImagePickerVc.maxImagesCount > 1) {
         [_doneButton setTitle:[NSString stringWithFormat:@"%@(%@)",_tzImagePickerVc.doneBtnTitleStr,@(_tzImagePickerVc.selectedModels.count)] forState:UIControlStateNormal];
