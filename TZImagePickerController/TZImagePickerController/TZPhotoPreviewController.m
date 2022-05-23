@@ -46,6 +46,9 @@
 @property (nonatomic, assign) double progress;
 @property (strong, nonatomic) UIAlertController *alertView;
 @property (nonatomic, strong) UIView *iCloudErrorView;
+
+@property (nonatomic, weak) SKImageCropViewController *imageCropViewController;
+
 @end
 
 @implementation TZPhotoPreviewController
@@ -165,10 +168,12 @@
     _cropButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _cropButton.titleLabel.font = [UIFont systemFontOfSize:15];
     [_cropButton setTitle:@"编辑" forState:UIControlStateNormal];
+    [_cropButton setTitle:@"取消" forState:UIControlStateSelected];
     [_cropButton setTitleColor:_tzImagePickerVc.oKButtonTitleColorNormal forState:UIControlStateNormal];
+    [_cropButton setTitleColor:_tzImagePickerVc.oKButtonTitleColorNormal forState:UIControlStateSelected];
     [_cropButton setTitleColor:UIColor.lightGrayColor forState:UIControlStateDisabled];
-    [_cropButton addTarget:self action:@selector(cropButtonClick) forControlEvents:UIControlEventTouchUpInside];
     [_cropButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentLeft];
+    [_cropButton addTarget:self action:@selector(cropButtonClick) forControlEvents:UIControlEventTouchUpInside];
 
     _doneButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _doneButton.titleLabel.font = [UIFont systemFontOfSize:15];
@@ -422,6 +427,16 @@
 }
 
 - (void)cropButtonClick {
+    if (_cropButton.selected) {
+        [_imageCropViewController willMoveToParentViewController:nil];
+        [_imageCropViewController.view removeFromSuperview];
+        [_imageCropViewController removeFromParentViewController];
+        _imageCropViewController = nil;
+        _isHideNaviBar = NO;
+        _naviBar.hidden = self.isHideNaviBar;
+        _cropButton.selected = NO;
+        return;
+    }
     TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
     // 如果图片正在从iCloud同步中,提醒用户
     if (_progress > 0 && _progress < 1 && (_selectButton.isSelected || !_tzImagePickerVc.selectedModels.count )) {
@@ -430,6 +445,7 @@
     }
     _isHideNaviBar = YES;
     _naviBar.hidden = self.isHideNaviBar;
+    _cropButton.selected = YES;
     NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.currentIndex inSection:0];
     TZPhotoPreviewCell *cell = (TZPhotoPreviewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
     SKImageCropViewController *cropViewController = SKImageCropViewController.new;
@@ -440,6 +456,7 @@
     [self.view insertSubview:cropViewController.view belowSubview:_naviBar];
     [cropViewController.view setFrame:self.view.bounds];
     [cropViewController didMoveToParentViewController:self];
+    _imageCropViewController = cropViewController;
 }
 
 - (void)doneButtonClick {
@@ -460,10 +477,10 @@
     }
     NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.currentIndex inSection:0];
     TZPhotoPreviewCell *cell = (TZPhotoPreviewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
-    if (_tzImagePickerVc.allowCrop && [cell isKindOfClass:[TZPhotoPreviewCell class]]) { // 裁剪状态
+    if (_imageCropViewController.parentViewController && [cell isKindOfClass:[TZPhotoPreviewCell class]]) { // 裁剪状态
         _doneButton.enabled = NO;
         [_tzImagePickerVc showProgressHUD];
-        UIImage *cropedImage = [TZImageCropManager cropImageView:cell.previewView.imageView toRect:_tzImagePickerVc.cropRect zoomScale:cell.previewView.scrollView.zoomScale containerView:self.view];
+        UIImage *cropedImage = [_imageCropViewController.imageCropView cropImage];
         if (_tzImagePickerVc.needCircleCrop) {
             cropedImage = [TZImageCropManager circularClipImage:cropedImage];
         }
@@ -628,6 +645,7 @@
 //    _numberLabel.hidden = (_tzImagePickerVc.selectedModels.count <= 0 || _isHideNaviBar || _isCropImage);
     
     _cropButton.enabled = (model.type != TZAssetModelMediaTypeVideo && model.type != TZAssetModelMediaTypeAudio);
+    _cropButton.hidden = (_tzImagePickerVc.maxImagesCount > 1);
     
     if (_tzImagePickerVc.selectedModels.count > 0 && _tzImagePickerVc.maxImagesCount > 1) {
         [_doneButton setTitle:[NSString stringWithFormat:@"%@(%@)",_tzImagePickerVc.doneBtnTitleStr,@(_tzImagePickerVc.selectedModels.count)] forState:UIControlStateNormal];
