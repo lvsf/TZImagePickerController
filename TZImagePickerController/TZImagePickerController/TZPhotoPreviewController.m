@@ -434,6 +434,7 @@
         _imageCropViewController = nil;
         _isHideNaviBar = NO;
         _naviBar.hidden = self.isHideNaviBar;
+        _toolBar.hidden = self.isHideNaviBar;
         _cropButton.selected = NO;
         return;
     }
@@ -445,6 +446,7 @@
     }
     _isHideNaviBar = YES;
     _naviBar.hidden = self.isHideNaviBar;
+    _toolBar.hidden = NO;
     _cropButton.selected = YES;
     NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.currentIndex inSection:0];
     TZPhotoPreviewCell *cell = (TZPhotoPreviewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
