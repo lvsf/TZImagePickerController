@@ -14,7 +14,7 @@
 #import "TZImageManager.h"
 #import "TZImageCropManager.h"
 
-#import "SKImageCropViewController.h"
+#import "TeamAppCropImageViewController.h"
 
 @interface TZPhotoPreviewController ()<UICollectionViewDataSource,UICollectionViewDelegate,UIScrollViewDelegate> {
     UICollectionView *_collectionView;
@@ -47,7 +47,7 @@
 @property (strong, nonatomic) UIAlertController *alertView;
 @property (nonatomic, strong) UIView *iCloudErrorView;
 
-@property (nonatomic, weak) SKImageCropViewController *imageCropViewController;
+@property (nonatomic, weak) TeamAppCropImageViewController *imageCropViewController;
 
 @end
 
@@ -426,16 +426,39 @@
     }
 }
 
+- (void)removeCrop {
+    [_imageCropViewController willMoveToParentViewController:nil];
+    [_imageCropViewController.view removeFromSuperview];
+    [_imageCropViewController removeFromParentViewController];
+    _imageCropViewController = nil;
+    _isHideNaviBar = NO;
+    _naviBar.hidden = self.isHideNaviBar;
+    _toolBar.hidden = self.isHideNaviBar;
+    _cropButton.selected = NO;
+}
+
+- (void)completeCrop:(UIImage *)image {
+    TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
+    _doneButton.enabled = NO;
+    [_tzImagePickerVc showProgressHUD];
+    UIImage *cropedImage = image;
+    if (_tzImagePickerVc.needCircleCrop) {
+        cropedImage = [TZImageCropManager circularClipImage:cropedImage];
+    }
+    _doneButton.enabled = YES;
+    [_tzImagePickerVc hideProgressHUD];
+    if (self.doneButtonClickBlockCropMode) {
+        TZAssetModel *model = _models[self.currentIndex];
+        self.doneButtonClickBlockCropMode(cropedImage,model.asset);
+    }
+    if (self.doneButtonClickBlockWithPreviewType) {
+        self.doneButtonClickBlockWithPreviewType(self.photos,_tzImagePickerVc.selectedAssets,self.isSelectOriginalPhoto);
+    }
+}
+
 - (void)cropButtonClick {
     if (_cropButton.selected) {
-        [_imageCropViewController willMoveToParentViewController:nil];
-        [_imageCropViewController.view removeFromSuperview];
-        [_imageCropViewController removeFromParentViewController];
-        _imageCropViewController = nil;
-        _isHideNaviBar = NO;
-        _naviBar.hidden = self.isHideNaviBar;
-        _toolBar.hidden = self.isHideNaviBar;
-        _cropButton.selected = NO;
+        [self removeCrop];
         return;
     }
     TZImagePickerController *_tzImagePickerVc = (TZImagePickerController *)self.navigationController;
@@ -444,15 +467,21 @@
         _alertView = [_tzImagePickerVc showAlertWithTitle:[NSBundle tz_localizedStringForKey:@"Synchronizing photos from iCloud"]];
         return;
     }
+    __weak typeof(self) weak_self = self;
     _isHideNaviBar = YES;
     _naviBar.hidden = self.isHideNaviBar;
-    _toolBar.hidden = NO;
+    _toolBar.hidden = self.isHideNaviBar;
     _cropButton.selected = YES;
     NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.currentIndex inSection:0];
     TZPhotoPreviewCell *cell = (TZPhotoPreviewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
-    SKImageCropViewController *cropViewController = SKImageCropViewController.new;
+    TeamAppCropImageViewController *cropViewController = TeamAppCropImageViewController.new;
     [cropViewController setImage:cell.previewView.imageView.image];
-    [cropViewController setBottomBarHeight:CGRectGetHeight(_toolBar.bounds)];
+    [cropViewController setDismiss:^{
+        [weak_self removeCrop];
+    }];
+    [cropViewController setDone:^(UIImage * _Nonnull cropImage) {
+        [weak_self completeCrop:cropImage];
+    }];
     [self addChildViewController:cropViewController];
     [self.view addSubview:cropViewController.view];
     [self.view insertSubview:cropViewController.view belowSubview:_naviBar];
@@ -480,18 +509,7 @@
     NSIndexPath *indexPath = [NSIndexPath indexPathForItem:self.currentIndex inSection:0];
     TZPhotoPreviewCell *cell = (TZPhotoPreviewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
     if (_imageCropViewController.parentViewController && [cell isKindOfClass:[TZPhotoPreviewCell class]]) { // 裁剪状态
-        _doneButton.enabled = NO;
-        [_tzImagePickerVc showProgressHUD];
-        UIImage *cropedImage = [_imageCropViewController.imageCropView cropImage];
-        if (_tzImagePickerVc.needCircleCrop) {
-            cropedImage = [TZImageCropManager circularClipImage:cropedImage];
-        }
-        _doneButton.enabled = YES;
-        [_tzImagePickerVc hideProgressHUD];
-        if (self.doneButtonClickBlockCropMode) {
-            TZAssetModel *model = _models[self.currentIndex];
-            self.doneButtonClickBlockCropMode(cropedImage,model.asset);
-        }
+        /// 暂时不存在这种场景
     } else if (self.doneButtonClickBlock) { // 非裁剪状态
         self.doneButtonClickBlock(_isSelectOriginalPhoto);
     }
