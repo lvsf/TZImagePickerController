@@ -476,10 +476,10 @@
     TZPhotoPreviewCell *cell = (TZPhotoPreviewCell *)[_collectionView cellForItemAtIndexPath:indexPath];
     TeamAppCropImageViewController *cropViewController = TeamAppCropImageViewController.new;
     [cropViewController setImage:cell.previewView.imageView.image];
-    [cropViewController setDismiss:^{
+    [cropViewController setDismiss:^(TeamAppCropImageViewController * _Nonnull vc) {
         [weak_self removeCrop];
     }];
-    [cropViewController setDone:^(UIImage * _Nonnull cropImage) {
+    [cropViewController setDone:^(TeamAppCropImageViewController * _Nonnull vc, UIImage * _Nonnull cropImage) {
         [weak_self completeCrop:cropImage];
     }];
     [self addChildViewController:cropViewController];
