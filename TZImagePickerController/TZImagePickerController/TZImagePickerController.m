@@ -35,6 +35,7 @@
 /// 默认4列, TZPhotoPickerController中的照片collectionView
 @property (nonatomic, assign) NSInteger columnNumber;
 @property (nonatomic, assign) NSInteger HUDTimeoutCount; ///< 超时隐藏HUD计数
+@property (nonatomic, weak) TZPhotoPickerController *currentPhotoPickerController;
 @end
 
 @implementation TZImagePickerController
@@ -430,6 +431,7 @@
     // 1.6.8 判断是否需要push到照片选择页，如果_pushPhotoPickerVc为NO,则不push
     if (!_didPushPhotoPickerVc && _pushPhotoPickerVc) {
         TZPhotoPickerController *photoPickerVc = [[TZPhotoPickerController alloc] init];
+        photoPickerVc.didSelectedItem = self.didSelectedItem;
         photoPickerVc.isFirstAppear = YES;
         photoPickerVc.columnNumber = self.columnNumber;
         [[TZImageManager manager] getCameraRollAlbumWithFetchAssets:NO completion:^(TZAlbumModel *model) {
@@ -437,6 +439,7 @@
             [self pushViewController:photoPickerVc animated:YES];
             self->_didPushPhotoPickerVc = YES;
         }];
+        _currentPhotoPickerController = photoPickerVc;
     }
 }
 
@@ -657,6 +660,15 @@
 
 - (void)settingBtnClick {
     [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+}
+
+- (void)setDidSelectedItem:(void (^)(UIImage *))didSelectedItem {
+    _didSelectedItem = didSelectedItem;
+    TZAlbumPickerController *vc = (TZAlbumPickerController *)self.viewControllers.firstObject;
+    if ([vc isKindOfClass:TZAlbumPickerController.class]) {
+        [vc setDidSelectedItem:didSelectedItem];
+    }
+    [_currentPhotoPickerController setDidSelectedItem:didSelectedItem];
 }
 
 - (void)pushViewController:(UIViewController *)viewController animated:(BOOL)animated {
@@ -910,6 +922,7 @@
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     TZPhotoPickerController *photoPickerVc = [[TZPhotoPickerController alloc] init];
+    photoPickerVc.didSelectedItem = self.didSelectedItem;
     photoPickerVc.columnNumber = self.columnNumber;
     TZAlbumModel *model = _albumArr[indexPath.row];
     photoPickerVc.model = model;

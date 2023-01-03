@@ -50,6 +50,9 @@
 - (instancetype)initCropTypeWithAsset:(PHAsset *)asset photo:(UIImage *)photo completion:(void (^)(UIImage *cropImage,PHAsset *asset))completion;
 
 #pragma mark -
+@property (nonatomic, copy) void(^didSelectedItem)(UIImage *image);
+
+#pragma mark -
 /// Default is 9 / 默认最大可选9张图片
 @property (nonatomic, assign) NSInteger maxImagesCount;
 
@@ -353,7 +356,8 @@
 
 @interface TZAlbumPickerController : UIViewController
 @property (nonatomic, assign) NSInteger columnNumber;
-@property (assign, nonatomic) BOOL isFirstAppear;
+@property (nonatomic, assign) BOOL isFirstAppear;
+@property (nonatomic, copy) void(^didSelectedItem)(UIImage *image);
 - (void)configTableView;
 @end
 
