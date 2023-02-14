@@ -10,13 +10,11 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/banchichen/TZImagePickerController.git", :tag => "3.8.3" }
   s.requires_arc = true
   
+  s.default_subspec = 'Basic'
+  
   s.subspec 'Basic' do |b|
     b.resources    = "TZImagePickerController/TZImagePickerController/*.{png,bundle}"
     b.source_files = "TZImagePickerController/TZImagePickerController/*.{h,m}"
-  end
-  
-  s.subspec 'Location' do |l|
-    l.source_files = 'TZImagePickerController/Location/*.{h,m}'
   end
   
   s.frameworks   = "Photos", "PhotosUI"
