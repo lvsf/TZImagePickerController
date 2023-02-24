@@ -729,7 +729,9 @@ static CGFloat itemMargin = 5;
         if (self.didSelectedItem) {
             __weak typeof(self) weak_self = self;
             [TZImageManager.manager getPhotoWithAsset:model.asset completion:^(UIImage *photo, NSDictionary *info, BOOL isDegraded) {
-                weak_self.didSelectedItem(photo);
+                if (!isDegraded) {
+                    weak_self.didSelectedItem(photo);
+                }
             }];
         }
         else {
