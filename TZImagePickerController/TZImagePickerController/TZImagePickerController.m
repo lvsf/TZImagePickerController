@@ -1028,7 +1028,7 @@
 
 + (BOOL)tz_isRightToLeftLayout {
     if (@available(iOS 9.0, *)) {
-        if ([UIView userInterfaceLayoutDirectionForSemanticContentAttribute:UISemanticContentAttributeUnspecified] == UIUserInterfaceLayoutDirectionRightToLeft) {
+        if ([UIView userInterfaceLayoutDirectionForSemanticContentAttribute:UIView.appearance.semanticContentAttribute] == UIUserInterfaceLayoutDirectionRightToLeft) {
             return YES;
         }
     } else {
